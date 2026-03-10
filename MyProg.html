@@ -4,6 +4,76 @@
   <meta charset="UTF-8">
   <title>LFSR Шифратор (Вариант 17)</title>
   <style>
+    body {
+      font-family: sans-serif;
+      background: #f0f2f5;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      font-family: monospace;
+      letter-spacing: 2px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    .output {
+      background: #444;
+      color: #f0f2f5;
+      padding: 15px;
+      font-family: monospace;
+      min-height: 20px;
+      max-height: 100px;
+      overflow-y: auto;
+      word-break: break-all;
+      margin-top: 10px;
+      border-radius: 4px;
+      border: 1px solid #444;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .section {
+      margin-bottom: 25px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .tooltip {
+      position: fixed;
+      background: #333;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+      font-family: monospace;
+    }
   </style>
 </head>
 <body>
@@ -28,15 +98,15 @@
 
   <div id="results" style="display:none; margin-top:30px;">
     <div class="section">
-      <label>Исходный файл (первые 50 байт):</label>
+      <label>Исходный файл (первые 10 байт):</label>
       <div id="outOrig" class="output"></div>
     </div>
     <div class="section">
-      <label>Сгенерированный ключ (первые 50 байт):</label>
+      <label>Сгенерированный ключ (первые 10 байт):</label>
       <div id="outKey" class="output"></div>
     </div>
     <div class="section">
-      <label>Результат (первые 50 байт):</label>
+      <label>Результат (первые 10 байт):</label>
       <div id="outRes" class="output"></div>
     </div>
   </div>
@@ -44,6 +114,133 @@
 <div id="bitTooltip" class="tooltip"></div>
 
 <script>
+
+  document.getElementById('seed').oninput = function() {
+    this.value = this.value.replace(/[^01]/g, '');
+    document.getElementById('counter').innerText = "Символов: " + this.value.length;
+  };
+
+  class LFSR {
+    constructor(seedStr) {
+      this.state = seedStr.split('').map(Number);
+    }
+
+    nextBit() {
+      let bit39 = this.state[0];
+      let bit4 = this.state[35];
+
+      let feedback = bit39 ^ bit4;
+      let outputBit = this.state[0];
+
+      for (let i = 0; i < 38; i++) {
+        this.state[i] = this.state[i + 1];
+      }
+      this.state[38] = feedback;
+
+      return outputBit;
+    }
+
+    nextByte() {
+      let byte = 0;
+      for (let i = 0; i < 8; i++) {
+        byte = (byte << 1) | this.nextBit();
+      }
+      return byte;
+    }
+  }
+
+  async function startProcessing() {
+    const seedStr = document.getElementById('seed').value;
+    const fileInput = document.getElementById('fileInput');
+
+    if (seedStr.length !== 39) return alert("Введите ровно 39 бит!");
+    if (!fileInput.files[0]) return alert("Выберите файл!");
+
+    const file = fileInput.files[0];
+    const arrayBuffer = await file.arrayBuffer();
+    const inputBytes = new Uint8Array(arrayBuffer);
+    const outputBytes = new Uint8Array(inputBytes.length);
+
+    const lfsr = new LFSR(seedStr);
+
+    let showOrig = "", showKey = "", showRes = "";
+    const limit = 10;
+
+    for (let i = 0; i < inputBytes.length; i++) {
+      let keyByte = lfsr.nextByte();
+      let resByte = inputBytes[i] ^ keyByte;
+      outputBytes[i] = resByte;
+
+      if (i < limit) {
+        showOrig += inputBytes[i].toString(2).padStart(8, '0') + " ";
+        showKey += keyByte.toString(2).padStart(8, '0') + " ";
+        showRes += resByte.toString(2).padStart(8, '0') + " ";
+      }
+    }
+
+    if (inputBytes.length > limit) {
+      showOrig += "...";
+      showKey += "...";
+      showRes += "...";
+    }
+
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('outOrig').innerText = showOrig;
+    document.getElementById('outKey').innerText = showKey;
+    document.getElementById('outRes').innerText = showRes;
+
+    saveFile(outputBytes, file.name);
+  }
+
+  async function saveFile(data, oldName) {
+    const newName = oldName.startsWith('processed_') ? oldName.replace('processed_', 'restored_') : 'processed_' + oldName;
+
+
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: newName,
+        });
+        const writable = await handle.createWritable();
+        await writable.write(data);
+        await writable.close();
+        return;
+      } catch (err) {
+        console.log("Пользователь отменил сохранение или произошла ошибка");
+        return;
+      }
+    }
+
+
+    const blob = new Blob([data]);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = newName;
+    a.click();
+  }
+
+  const outputs = ['outOrig', 'outKey', 'outRes'];
+
+  outputs.forEach(id => {
+    const element = document.getElementById(id);
+
+    element.addEventListener('mouseup', function(e) {
+      const selection = window.getSelection();
+      const selectedText = selection.toString();
+
+      if (selectedText.length === 1 && /[01]/.test(selectedText)) {
+        const range = selection.getRangeAt(0);
+        const textContent = this.textContent || this.innerText;
+        const preSelectionText = textContent.substring(0, range.startOffset);
+        const bitsBefore = (preSelectionText.match(/[01]/g) || []).length;
+
+        alert(`Выделен бит под номером: ${bitsBefore + 1}`);
+      }
+    });
+  });
+
 </script>
 </body>
 </html>
+
