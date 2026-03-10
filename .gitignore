@@ -1,0 +1,18 @@
+# Папка IDEA (ВСЕ файлы настроек)
+.idea/
+
+# Node.js (огромная папка с библиотеками)
+node_modules/
+
+# Системные файлы macOS/Windows
+.DS_Store
+Thumbs.db
+
+# Конфиги, которые не нужны в репозитории
+.editorconfig
+.gitattributes
+
+# Временные файлы
+*.log
+*.tmp
+*.swp

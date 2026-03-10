@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>LFSR Шифратор (Вариант 17)</title>
+  <style>
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Потоковый шифр LFSR (x^39 + x^4 + 1)</h2>
+
+  <div class="section">
+    <label>Начальное состояние (39 бит):</label>
+    <input type="text" id="seed" maxlength="39"
+           placeholder="Например: 111111111111111111111111111111111111111"
+           oninput="this.value = this.value.replace(/[^01]/g, '')">
+    <small id="counter">Символов: 0</small>
+  </div>
+
+  <div class="section">
+    <label>Выберите файл для обработки:</label>
+    <input type="file" id="fileInput">
+  </div>
+
+  <button onclick="startProcessing()">Запустить обработку</button>
+
+  <div id="results" style="display:none; margin-top:30px;">
+    <div class="section">
+      <label>Исходный файл (первые 50 байт):</label>
+      <div id="outOrig" class="output"></div>
+    </div>
+    <div class="section">
+      <label>Сгенерированный ключ (первые 50 байт):</label>
+      <div id="outKey" class="output"></div>
+    </div>
+    <div class="section">
+      <label>Результат (первые 50 байт):</label>
+      <div id="outRes" class="output"></div>
+    </div>
+  </div>
+</div>
+<div id="bitTooltip" class="tooltip"></div>
+
+<script>
+</script>
+</body>
+</html>
