@@ -11,7 +11,7 @@
       color: #333;
     }
     .container {
-      max-width: 800px;
+      max-width: 750px;
       margin: 0 auto;
       background: white;
       padding: 30px;
@@ -98,15 +98,15 @@
 
   <div id="results" style="display:none; margin-top:30px;">
     <div class="section">
-      <label>Исходный файл (первые 10 байт):</label>
+      <label>Исходный файл (первые 10 байт + ... + последние 5 байт):</label>
       <div id="outOrig" class="output"></div>
     </div>
     <div class="section">
-      <label>Сгенерированный ключ (первые 10 байт):</label>
+      <label>Сгенерированный ключ (первые 10 байт + ... + последние 5 байт):</label>
       <div id="outKey" class="output"></div>
     </div>
     <div class="section">
-      <label>Результат (первые 10 байт):</label>
+      <label>Результат (первые 10 байт + ... + последние 5 байт):</label>
       <div id="outRes" class="output"></div>
     </div>
   </div>
@@ -164,24 +164,71 @@
     const lfsr = new LFSR(seedStr);
 
     let showOrig = "", showKey = "", showRes = "";
-    const limit = 10;
+    const firstLimit = 10;
+    const lastLimit = 5;
 
     for (let i = 0; i < inputBytes.length; i++) {
       let keyByte = lfsr.nextByte();
       let resByte = inputBytes[i] ^ keyByte;
       outputBytes[i] = resByte;
 
-      if (i < limit) {
+
+      if (i < firstLimit) {
         showOrig += inputBytes[i].toString(2).padStart(8, '0') + " ";
         showKey += keyByte.toString(2).padStart(8, '0') + " ";
         showRes += resByte.toString(2).padStart(8, '0') + " ";
       }
+
+
+      if (i >= inputBytes.length - lastLimit) {
+
+      }
     }
 
-    if (inputBytes.length > limit) {
-      showOrig += "...";
-      showKey += "...";
-      showRes += "...";
+
+    if (inputBytes.length > firstLimit + lastLimit) {
+      showOrig += "... ";
+      showKey += "... ";
+      showRes += "... ";
+    }
+
+
+    if (inputBytes.length > firstLimit) {
+      for (let i = inputBytes.length - lastLimit; i < inputBytes.length; i++) {
+        if (i >= 0) {
+
+        }
+      }
+    }
+
+
+    let allOrig = [];
+    let allKey = [];
+    let allRes = [];
+
+
+    const lfsr2 = new LFSR(seedStr);
+
+    for (let i = 0; i < inputBytes.length; i++) {
+      let keyByte = lfsr2.nextByte();
+      let resByte = inputBytes[i] ^ keyByte;
+
+      allOrig.push(inputBytes[i].toString(2).padStart(8, '0'));
+      allKey.push(keyByte.toString(2).padStart(8, '0'));
+      allRes.push(resByte.toString(2).padStart(8, '0'));
+    }
+
+
+    if (inputBytes.length <= firstLimit + lastLimit) {
+
+      showOrig = allOrig.join(" ") + (inputBytes.length > 0 ? " " : "");
+      showKey = allKey.join(" ") + (inputBytes.length > 0 ? " " : "");
+      showRes = allRes.join(" ") + (inputBytes.length > 0 ? " " : "");
+    } else {
+
+      showOrig = allOrig.slice(0, firstLimit).join(" ") + " ... " + allOrig.slice(-lastLimit).join(" ");
+      showKey = allKey.slice(0, firstLimit).join(" ") + " ... " + allKey.slice(-lastLimit).join(" ");
+      showRes = allRes.slice(0, firstLimit).join(" ") + " ... " + allRes.slice(-lastLimit).join(" ");
     }
 
     document.getElementById('results').style.display = 'block';
@@ -243,4 +290,3 @@
 </script>
 </body>
 </html>
-
